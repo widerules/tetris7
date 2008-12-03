@@ -12,7 +12,7 @@ class EuchreJudge(val trump : Suit) {
   def getWinner[A <: Card](cards : List[A]) : Card = {
     require(cards != Nil, "Cannot judge 0 cards")
     val cardLed = cards.head
-    def isSuitLed(c : Card) = c.suit equals cardLed.suit
+    def isSuitLed(c : Card) = c.suit == cardLed.suit
     // if a outranks b 1, if they are equal 0 else -1
     def compare(a : Card, b : Card) : Int = {
       (a,b) match {
