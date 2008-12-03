@@ -8,7 +8,7 @@ object Cards {
   case object SuitRed extends SuitColor
   case object SuitBlack extends SuitColor
   
-  abstract case class Suit(name : String, color : SuitColor)
+  abstract case class Suit(name : String, color : SuitColor);
 
   case object Clubs extends Suit("c", SuitBlack)
   case object Diamonds extends Suit("d", SuitRed)
@@ -16,6 +16,11 @@ object Cards {
   case object Spades extends Suit("s", SuitBlack)
   
   val Suits = List(Clubs, Diamonds, Hearts, Spades)
+  //Finds the other suit, that is the same color
+  //as this one
+  def otherSuitSameColor(s : Suit) = {
+    (for (x <- Suits if (x.color == s.color && x != s)) yield x).head
+  }
   
   case class Rank(name : String, strength : Int) extends Ordered[Rank] {
     override def compare(other : Rank) = strength.compare(other.strength)
