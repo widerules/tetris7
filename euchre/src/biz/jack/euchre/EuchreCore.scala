@@ -47,7 +47,7 @@ case class GameScore(val scores : Map[Team, Int]) {
   }
 }
 
-case class Contract(trump : Suit, maker : Team)
+case class Contract(trump : Suit, maker : TeamPlayer, alone : Boolean)
 
 class EuchreCore(val teams : List[Team]) {
   require(teams.size == 2, "Only two teams allowed")
