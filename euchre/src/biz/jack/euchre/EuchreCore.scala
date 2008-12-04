@@ -81,15 +81,20 @@ class EuchreCore(val teams : List[Team]) {
       
       def totalTricks(tricks : List[Team], map : Map[Team, Int]) : (Team, Int)= {
         if (tricks == Nil) {
-          
+          map.toList match {
+            case (at,as)::(bt,bs)::Nil =>
+              if (as > bs) (at,as) else (bt,bs)
+            case _ => error("Unreachable")
+          }
         } else {
           val t = tricks.head
-          val newMap = map + (t, map.get(t).getOrElse(0) + 1)
+          val newMap = map + ((t, map.get(t).getOrElse(0) + 1))
           totalTricks(tricks.tail, newMap)
         }
       }
       
-      val gp = g + scoreRound(contract, totalTricks(tricks))
+      val winner = totalTricks(tricks, Map());
+      val gp = g + scoreRound(contract, winner._1, winner._2)
       if (gp.isOver) {
         gp
       } else {
