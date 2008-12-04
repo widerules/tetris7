@@ -77,7 +77,19 @@ class EuchreCore(val teams : List[Team]) {
       }
       val (hands,contract) = preMainRound
       
-      val gp = g + playMainRound(hands, new EuchreJudge(contract.trump))
+      val tricks = playMainRound(hands, new EuchreJudge(contract.trump))
+      
+      def totalTricks(tricks : List[Team], map : Map[Team, Int]) : (Team, Int)= {
+        if (tricks == Nil) {
+          
+        } else {
+          val t = tricks.head
+          val newMap = map + (t, map.get(t).getOrElse(0) + 1)
+          totalTricks(tricks.tail, newMap)
+        }
+      }
+      
+      val gp = g + scoreRound(contract, totalTricks(tricks))
       if (gp.isOver) {
         gp
       } else {
@@ -140,10 +152,9 @@ class EuchreCore(val teams : List[Team]) {
       case Some(TeamPlayerHand(t,p,h)) => Contract(topCard.suit, t)
       case None => nameIt(players)
     }
-    
   }
   
-  def playMainRound(hands : List[TeamPlayerHand], judge : EuchreJudge) : RoundScore = {
+  def playMainRound(hands : List[TeamPlayerHand], judge : EuchreJudge) : List[Team] = {
     def playTrick(hands : List[TeamPlayerHand]) : List[Team] = {
       if (hands == Nil) {
         Nil
@@ -163,12 +174,11 @@ class EuchreCore(val teams : List[Team]) {
         winningTPC._1::playTrick(rotateToPlayer(hands, winningTPC._2))
       }
     }
-    
-    RoundScore(null,0)
+    playTrick(hands)
   }
   
-  def scoreRound {
-    
+  def scoreRound(contract : Contract, team : Team, tricks : Int) : RoundScore = {
+    RoundScore(null,0)
   }
   
 }
