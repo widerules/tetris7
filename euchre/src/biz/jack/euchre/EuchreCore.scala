@@ -79,13 +79,7 @@ class EuchreCore(val teams : List[Team]) {
       
       playMainRound(hands)
       
-      val gp = g + scoreRound()
-      if (gp.isOver) {
-        gp
-      } else {
-        playRound(rotatePlayers(players,1), gp)
-      }
-      }
+    }
     
     val p1::p2::p3::p4::Nil = for (t <- teams; p <- t.players) yield TeamPlayer(t,p)
     playRound(rotatePlayers(p1::p3::p2::p4::Nil, randy.nextInt(4)), 
