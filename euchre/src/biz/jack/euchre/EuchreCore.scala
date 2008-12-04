@@ -12,9 +12,10 @@ object EuchreCore {
 import EuchreCore._
 
 trait Player {
-  def ordersItUp : Boolean
-  def nameIt : Option[Suit]
-  def forcedToNameIt : Suit
+  //Return (false,?)=no, (true,false)=yes, team (true, true) = yes, going alone
+  def ordersItUp : (Boolean, Boolean)
+  def nameIt : Option[(Suit,Boolean)]
+  def forcedToNameIt : (Suit,Boolean)
   def dropCard(card : Card) : Card
   def playCard : Card
 }
@@ -62,18 +63,31 @@ class EuchreCore(val teams : List[Team]) {
     }
     def playRound(players : List[TeamPlayer], g : GameScore) : GameScore = {
       def preMainRound : (List[TeamPlayerHand],Contract) = {
+        //Deal the cards to the players
         val (hands, deck) = dealCards(players)
+        
+        //Get the contract
         val contract = playCallRound(hands, deck.head)
-      
-        val replacementCard = if (contract.trump == deck.head.suit) {
-          deck.head
-        } else {
-          deck.tail.head
+        
+        //Let the dealer replace his card
+        val hands2 = {
+          val replacementCard = if (contract.trump == deck.head.suit) {
+            deck.head
+          } else {
+            deck.tail.head
+          }
+          val dealer = hands.last
+          val removedCard = dealer.player.dropCard(replacementCard)
+          val newDealerHand = replacementCard::dealer.hand.filter(removedCard!=)
+          hands.dropRight(1):::TeamPlayerHand(dealer.team, dealer.player, newDealerHand)::Nil
         }
-        val dealer = hands.last
-        val removedCard = dealer.player.dropCard(replacementCard)
-        val newDealerHand = replacementCard::dealer.hand.filter(removedCard!=)
-        (hands.dropRight(1):::TeamPlayerHand(dealer.team, dealer.player, newDealerHand)::Nil,contract)
+        
+        if (contract.alone) {
+        //filter out for going alone
+          (hands2.filter(x => contract.maker.team != x.team || contract.maker.player == x.player),contract)
+        } else {
+          (hands2,contract)
+        }
       }
       val (hands,contract) = preMainRound
       
@@ -81,24 +95,25 @@ class EuchreCore(val teams : List[Team]) {
       
       def totalTricks(tricks : List[Team], map : Map[Team, Int]) : (Team, Int)= {
         if (tricks == Nil) {
-          map.toList match {
-            case (at,as)::(bt,bs)::Nil =>
-              if (as > bs) (at,as) else (bt,bs)
-            case _ => error("Unreachable")
-          }
+          //Get the team that won the most tricks and how many they won
+          def maxer(high : (Team, Int), current : (Team, Int)) = {
+            if (current._2 > high._2) current else high
+          } 
+          map.toList.foldLeft((null : Team, 0))(maxer _)
         } else {
+          //Put all of the tricks into a map
           val t = tricks.head
           val newMap = map + ((t, map.get(t).getOrElse(0) + 1))
           totalTricks(tricks.tail, newMap)
         }
       }
       
-      val winner = totalTricks(tricks, Map());
-      val gp = g + scoreRound(contract, winner._1, winner._2)
+      val (winningTeam,score) = totalTricks(tricks, Map());
+      val gp = g + scoreRound(contract, winningTeam, score)
       if (gp.isOver) {
         gp
       } else {
-        playRound(players, gp)
+        playRound(rotatePlayers(players,1), gp)
       }
     }
     
@@ -136,17 +151,25 @@ class EuchreCore(val teams : List[Team]) {
   
   def playCallRound(players : List[TeamPlayerHand], topCard : Card) : Contract = {
     
-    def orderItUp(players : List[TeamPlayerHand]) : Option[TeamPlayerHand] = players match {
-      case p::ps => if (p.player.ordersItUp) Some(p) else orderItUp(ps)
+    def orderItUp(players : List[TeamPlayerHand]) : Option[(TeamPlayer,Boolean)] = players match {
+      case p::ps =>
+        val (order,alone) = p.player.ordersItUp
+        if (order) {
+          Some((TeamPlayer(p.team,p.player),alone)) 
+        } else  {
+          orderItUp(ps)
+        }
       case Nil => None
     }
     
     def nameIt(players : List[TeamPlayerHand]) : Contract = players match {
-      case p::Nil => Contract(p.player.forcedToNameIt, p.team)
+      case p::Nil =>
+        val (suit,alone) = p.player.forcedToNameIt
+        Contract(suit, TeamPlayer(p.team,p.player), alone)
       case p::ps => 
         val s = p.player.nameIt
         if (s.isDefined) {
-          Contract(s.get, p.team)
+          Contract(s.get._1, TeamPlayer(p.team,p.player), s.get._2)
         } else {
           nameIt(ps)
         }
@@ -154,7 +177,7 @@ class EuchreCore(val teams : List[Team]) {
     }
     
     orderItUp(players) match {
-      case Some(TeamPlayerHand(t,p,h)) => Contract(topCard.suit, t)
+      case Some((tp, alone)) => Contract(topCard.suit, tp, alone)
       case None => nameIt(players)
     }
   }
