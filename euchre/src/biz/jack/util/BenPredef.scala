@@ -9,6 +9,18 @@ object BenPredef {
   
   implicit def boolean2BRB(b : Boolean) = BenRichBoolean(b)
   
+  def shuffle[A](list : List[A], randy : java.util.Random) : List[A] = {
+    val array = list.toArray;
+    var i = 0;
+    while (i < array.size) {
+      val t = array(i)
+      val offset = randy.nextInt(array.size)
+      array(i) = array(offset)
+      array(offset) = t
+      i+=1;
+    }
+    array.toList
+  }
   /*
   case class NeverNull[A](val value : A) {
     require(value != null, "Error never nulls cannot contain null values")

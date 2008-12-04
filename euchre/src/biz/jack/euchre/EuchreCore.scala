@@ -2,6 +2,7 @@ package biz.jack.euchre
 
 
 import cards.Cards._
+import util.BenPredef._
 
 object EuchreCore {
   val WinningScore = 10;
@@ -37,13 +38,11 @@ case class RoundScore(val team : Team, val score : Int )
 case class GameScore(val scores : Map[Team, Int]) {
   require(scores.size == 2, "Inadequate number of scores")
   def isOver : Boolean = !scores.filter(_._2 > WinningScore).isEmpty
-  def +(r : RoundScore) = scores.map { x =>
-    val (team,score) = x
-    if (team == r.team) {
-      (team,r.score + score)
-    } else {
-      x
+  def +(r : RoundScore) : GameScore = {
+    val i = for ((t,s) <- scores) yield {
+      if (t == r.team) (t,s+r.score) else (t,s)
     }
+    GameScore(Map() ++ i)
   }
 }
 
@@ -77,8 +76,12 @@ class EuchreCore(val teams : List[Team]) {
       }
       val hands = preMainRound
       
-      playMainRound(hands)
-      
+      val gp = g + playMainRound(hands)
+      if (gp.isOver) {
+        gp
+      } else {
+        playRound(players, gp)
+      }
     }
     
     val p1::p2::p3::p4::Nil = for (t <- teams; p <- t.players) yield TeamPlayer(t,p)
@@ -87,6 +90,23 @@ class EuchreCore(val teams : List[Team]) {
   }
   
   def dealCards(players : List[TeamPlayer]) : (List[TeamPlayerHand], List[Card]) = {
+    val deck = shuffle(EuchreDeck, randy)
+    def deal(deck : List[Card], players : List[TeamPlayer]) : List[(Option[TeamPlayer], List[Card])] = {
+      if (players == Nil) {
+        (None, deck)
+      } else {
+        (Some(players.head), deck.take(5))::deal(deck.drop(5),players.tail)
+      }
+    }
+    val t = deal(deck, players)
+    val hands = t.flatMap{x =>
+      x match {
+        case (Some(TeamPlayer(t,p)), hand) =>
+          List(TeamPlayerHand(t,p,hand))
+        case _ =>
+          Nil
+      }
+    } 
   }
   
   def playCallRound(players : List[TeamPlayerHand], topCard : Card) : Contract = {
@@ -114,8 +134,7 @@ class EuchreCore(val teams : List[Team]) {
     
   }
   
-  def playMainRound(hands : List[TeamPlayerHand]) {
-    
+  def playMainRound(hands : List[TeamPlayerHand]) : RoundScore = {
   }
   
   def scoreRound {
