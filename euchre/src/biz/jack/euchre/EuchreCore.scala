@@ -11,18 +11,25 @@ object EuchreCore {
 
 import EuchreCore._
 
+
+abstract case class OrderItUpResult() 
+case object OrderItUpPass extends OrderItUpResult
+case object OrderItUp extends OrderItUpResult
+case object OrderItUpAlone extends OrderItUpResult
+
 trait Player {
   //Return (false,?)=no, (true,false)=yes, team (true, true) = yes, going alone
-  def ordersItUp(card : Card, hand : List[Card]) : (Boolean, Boolean)
+  def ordersItUp(card : Card, hand : List[Card]) : OrderItUpResult
   def nameIt(badSuit : Suit, hand : List[Card]) : Option[(Suit,Boolean)]
   def forcedToNameIt(badSuit : Suit, hand : List[Card]) : (Suit,Boolean)
-  def dropCard(newCard : Card) : Card
-  def playCard(hand : List[Card]) : Card
+  def dropCard(trump : Suit, newCard : Card) : Card
+  def playCard(cardsInPlay : List[Card], hand : List[Card], judge : EuchreJudge) : Card
 }
 case class Team(val players : List[Player]) {
   require(players.size == 2, "Only two players per team allowed")
 }
 case class TeamPlayer(team : Team, player : Player)
+case class TeamPlayerCard(team : Team, player : Player, card : Card)
 case class TeamPlayerHand(team : Team, player : Player, hand : List[Card])
 
 case class RoundScore(val team : Team, val score : Int )
@@ -66,7 +73,7 @@ class EuchreCore(val teams : List[Team]) {
             deck.tail.head
           }
           val dealer = hands.last
-          val removedCard = dealer.player.dropCard(replacementCard)
+          val removedCard = dealer.player.dropCard(contract.trump, replacementCard)
           val newDealerHand = replacementCard::dealer.hand.filter(removedCard!=)
           hands.dropRight(1):::TeamPlayerHand(dealer.team, dealer.player, newDealerHand)::Nil
         }
@@ -141,11 +148,13 @@ class EuchreCore(val teams : List[Team]) {
     
     def orderItUp(players : List[TeamPlayerHand]) : Option[(TeamPlayer,Boolean)] = players match {
       case p::ps =>
-        val (order,alone) = p.player.ordersItUp(topCard, p.hand)
-        if (order) {
-          Some((TeamPlayer(p.team,p.player),alone)) 
-        } else  {
-          orderItUp(ps)
+        p.player.ordersItUp(topCard, p.hand) match {
+          case OrderItUpPass =>
+            orderItUp(ps)  
+          case OrderItUp =>
+            Some((TeamPlayer(p.team,p.player),false))
+          case OrderItUpAlone =>
+            Some((TeamPlayer(p.team,p.player),true))
         }
       case Nil => None
     }
@@ -182,12 +191,19 @@ class EuchreCore(val teams : List[Team]) {
             rotateToPlayer(hands.tail:::hands.head::Nil,player)
           }
         }
-        val cards = for (TeamPlayerHand(t,p,h) <- hands) yield {
-          (t,p,p.playCard(h))
+        def playCards(cardsInPlay : List[TeamPlayerCard], hands : List[TeamPlayerHand]) : List[TeamPlayerCard] = {
+          hands match {
+            case Nil =>
+              cardsInPlay
+            case h::hs =>
+              playCards(cardsInPlay:::TeamPlayerCard(h.team, h.player, h.player.playCard(cardsInPlay.map(_.card),h.hand,judge))::Nil,hs)
+          }
         }
-        val winningCard = judge.getWinner(cards.map(_._3))
-        val winningTPC = cards.find(_._2==winningCard).get
-        winningTPC._1::playTrick(rotateToPlayer(hands, winningTPC._2))
+        
+        val tpcs = playCards(Nil,hands)
+        val winningCard = judge.getWinner(tpcs.map(_.card))
+        val winningTPC = tpcs.find(_.card==winningCard).get
+        winningTPC.team::playTrick(rotateToPlayer(hands, winningTPC.player))
       }
     }
     playTrick(hands)
