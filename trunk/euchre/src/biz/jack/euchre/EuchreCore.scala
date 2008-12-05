@@ -13,30 +13,19 @@ import EuchreCore._
 
 trait Player {
   //Return (false,?)=no, (true,false)=yes, team (true, true) = yes, going alone
-  def ordersItUp : (Boolean, Boolean)
-  def nameIt : Option[(Suit,Boolean)]
-  def forcedToNameIt : (Suit,Boolean)
-  def dropCard(card : Card) : Card
-  def playCard : Card
+  def ordersItUp(card : Card, hand : List[Card]) : (Boolean, Boolean)
+  def nameIt(badSuit : Suit, hand : List[Card]) : Option[(Suit,Boolean)]
+  def forcedToNameIt(badSuit : Suit, hand : List[Card]) : (Suit,Boolean)
+  def dropCard(newCard : Card) : Card
+  def playCard(hand : List[Card]) : Card
 }
-
-class EuchreScoreKeeper {
-  
-}
-
 case class Team(val players : List[Player]) {
   require(players.size == 2, "Only two players per team allowed")
 }
-
-case class TeamPlayer(team : Team, player : Player) {
-  
-}
-case class TeamPlayerHand(team : Team, player : Player, hand : List[Card]) {
-  
-}
+case class TeamPlayer(team : Team, player : Player)
+case class TeamPlayerHand(team : Team, player : Player, hand : List[Card])
 
 case class RoundScore(val team : Team, val score : Int )
-
 case class GameScore(val scores : Map[Team, Int]) {
   require(scores.size == 2, "Inadequate number of scores")
   def isOver : Boolean = !scores.filter(_._2 > WinningScore).isEmpty
@@ -109,7 +98,7 @@ class EuchreCore(val teams : List[Team]) {
       }
       
       val (winningTeam,score) = totalTricks(tricks, Map());
-      val gp = g + scoreRound(contract, winningTeam, score)
+      val gp = g + RoundScore(winningTeam, scoreRound(contract, winningTeam, score))
       if (gp.isOver) {
         gp
       } else {
@@ -118,8 +107,7 @@ class EuchreCore(val teams : List[Team]) {
     }
     
     val p1::p2::p3::p4::Nil = for (t <- teams; p <- t.players) yield TeamPlayer(t,p)
-    playRound(rotatePlayers(p1::p3::p2::p4::Nil, randy.nextInt(4)), 
-              GameScore(Map() ++ (for (t <- teams) yield (t,0))))
+    playRound(rotatePlayers(p1::p3::p2::p4::Nil, randy.nextInt(4)), GameScore(Map() ++ (teams.map((_,0)))))
   }
   
   def dealCards(players : List[TeamPlayer]) : (List[TeamPlayerHand], List[Card]) = {
@@ -153,7 +141,7 @@ class EuchreCore(val teams : List[Team]) {
     
     def orderItUp(players : List[TeamPlayerHand]) : Option[(TeamPlayer,Boolean)] = players match {
       case p::ps =>
-        val (order,alone) = p.player.ordersItUp
+        val (order,alone) = p.player.ordersItUp(topCard, p.hand)
         if (order) {
           Some((TeamPlayer(p.team,p.player),alone)) 
         } else  {
@@ -164,10 +152,10 @@ class EuchreCore(val teams : List[Team]) {
     
     def nameIt(players : List[TeamPlayerHand]) : Contract = players match {
       case p::Nil =>
-        val (suit,alone) = p.player.forcedToNameIt
+        val (suit,alone) = p.player.forcedToNameIt(topCard.suit, p.hand)
         Contract(suit, TeamPlayer(p.team,p.player), alone)
       case p::ps => 
-        val s = p.player.nameIt
+        val s = p.player.nameIt(topCard.suit, p.hand)
         if (s.isDefined) {
           Contract(s.get._1, TeamPlayer(p.team,p.player), s.get._2)
         } else {
@@ -195,7 +183,7 @@ class EuchreCore(val teams : List[Team]) {
           }
         }
         val cards = for (TeamPlayerHand(t,p,h) <- hands) yield {
-          (t,p,p.playCard)
+          (t,p,p.playCard(h))
         }
         val winningCard = judge.getWinner(cards.map(_._3))
         val winningTPC = cards.find(_._2==winningCard).get
@@ -205,9 +193,20 @@ class EuchreCore(val teams : List[Team]) {
     playTrick(hands)
   }
   
-  def scoreRound(contract : Contract, team : Team, tricks : Int) : RoundScore = {
-    RoundScore(null,0)
+  def scoreRound(contract : Contract, winner : Team, tricks : Int) : Int = {
+    val swept = tricks == 5
+    val defenderWins = contract.maker.team != winner 
+    if (defenderWins) {
+      //Defender wins
+      2
+    } else {
+      //Makers win
+      if (contract.alone) {
+        if (swept) 4 else 1
+      } else {
+        if (swept) 2 else 1
+      }
+    }
   }
-  
 }
 
