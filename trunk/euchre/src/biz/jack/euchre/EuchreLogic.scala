@@ -15,18 +15,21 @@ trait EuchreDecider {
   def pickItUp(dealtState : EuchreDealtState, gameState : EuchreGameState) : Option[PlayerBid]
   def nameIt(dealtState : EuchreDealtState, gameState : EuchreGameState) : Option[(Suit, PlayerBid)]
   def nameItForced(dealtState : EuchreDealtState, gameState : EuchreGameState) : (Suit, PlayerBid)
+  def discard(biddedState : EuchreBiddedState, gameState: EuchreGameState) : (Card)
 }
 
 abstract case class EuchreAction()
 
 case class EuchreGameState(val rounds : List[EuchreRoundState])
-case class EuchreRoundState(val players : List[Player])
-case class EuchreDealtState(val prev : EuchreRoundState, val dealt : (List[(Player, List[Card])],List[Card])) {
+case class EuchreRoundState(val players : List[Player]) {
+  lazy val dealer = players.last
+}
+case class EuchreDealtState(val pre : EuchreRoundState, val dealt : (List[(Player, List[Card])],List[Card])) {
   lazy val flippedCard = dealt._2.head
   lazy val hiddenCard = dealt._2.tail.head
 }
-case class EuchreBiddedState(val prev : EuchreDealtState, val maker : Player, val suit : Suit, val bid : PlayerBid, val dealerCard : Card) {
-  lazy val wasOrderedUp = prev.flippedCard == dealerCard
+case class EuchreBiddedState(val pre : EuchreDealtState, val maker : Player, val suit : Suit, val bid : PlayerBid, val dealerCard : Card) {
+  lazy val wasOrderedUp = pre.flippedCard == dealerCard
 }
 
 case class PlayerBid()
@@ -85,6 +88,13 @@ class EuchreGame(val rules : EuchreRules, teams_ : List[List[EuchreDecider]]) {
         EuchreBiddedState(dealtState, maker, suit, bid, dealerCard)
       }
       val biddedState = doBids(dealt._1)
+      //Get the dealer discard
+      val discard = startState.dealer.decider.discard(biddedState, gameState)
+      //Create the dealers new hand
+      val dh = dealtState.dealt._1.flatMap(p=>if (p._1 == startState.dealer) p._2 else Nil).map(c=> if (c == discard) biddedState.dealerCard else c)
+      val newHands = dealtState.dealt._1.map(p=>if (p._1 == startState.dealer) (p,dh)else p)
+      //Todo Ensure that the dealer's hand has that card in it
+      
       
       5
     }
