@@ -46,4 +46,19 @@ object Cards {
   val EuchreDeck : List[Card] = for (c <- FullDeck if (c.rank >= Rank9 && c.rank <= RankA)) yield c 
  
   case class Card(rank : Rank, suit : Suit) {}
+  
+  /*Deals a shuffled deck to players
+   */
+  def dealCards[A](players : List[A], cards : Int, deck : List[Card]) : (List[(A, List[Card])], List[Card]) = {
+    def dealCards[A](players : List[A], cards : Int, deck : List[Card], hands : List[(A, List[Card])]) : (List[(A, List[Card])], List[Card]) = {
+      if (players == Nil) {
+        (hands, deck)
+      } else {
+        val player = players.head
+        val hand = deck.take(cards)
+        dealCards(players.tail, cards, deck.drop(cards), (player, hand)::hands)
+      }
+    }
+    dealCards(players, cards, deck, Nil)
+  }
 }

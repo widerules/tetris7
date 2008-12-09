@@ -1,6 +1,6 @@
 package biz.jack.euchre
 
-
+/*
 import cards.Cards._
 import util.BenPredef._
 
@@ -226,3 +226,4 @@ class EuchreCore(val teams : List[Team]) {
   }
 }
 
+*/
