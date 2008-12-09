@@ -1,7 +1,7 @@
 package biz.jack.euchre
 
 import cards.Cards._
-
+/*
 
 //Simple Euchre ai player
 class ComputerEuchrePlayer extends Player {
@@ -47,3 +47,4 @@ class ComputerEuchrePlayer extends Player {
   }
   
 }
+                    */
