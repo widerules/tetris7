@@ -4,7 +4,7 @@ import cards.Cards._
 import util.BenPredef._
 
 //Determine the rank of cards
-class EuchreJudge(val trump : Suit) {
+case class EuchreJudge(val trump : Suit) {
   //Returns the winning card, 
   //the first card in the list must be the card that was lead
   def isHighBower(c : Card) = c.suit == trump && c.rank == RankJ
