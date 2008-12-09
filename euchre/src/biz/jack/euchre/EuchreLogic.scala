@@ -11,30 +11,35 @@ object EuchreGame {
 
 import EuchreGame._
 
+
+
+object EuchreGameStates {
+  case class GameState(val rounds : List[RoundState])
+  case class RoundState(val players : List[Player]) {
+    lazy val dealer = players.last
+  }
+  case class DealtState(val pre : RoundState, val dealt : (List[(Player, List[Card])],List[Card])) {
+    lazy val flippedCard = dealt._2.head
+    lazy val hiddenCard = dealt._2.tail.head
+  }
+  case class BiddedState(val pre : DealtState, val maker : Player, val suit : Suit, val bid : TeamOrAlone, val dealerCard : Card) {
+    lazy val wasOrderedUp = pre.flippedCard == dealerCard
+  }
+  case class DiscardedState(val pre : BiddedState, val hands : List[(Player, List[Card])])
+}
+
+import EuchreGameStates._
+
 trait EuchreDecider {
-  def pickItUp(dealtState : EuchreDealtState, gameState : EuchreGameState) : Option[PlayerBid]
-  def nameIt(dealtState : EuchreDealtState, gameState : EuchreGameState) : Option[(Suit, PlayerBid)]
-  def nameItForced(dealtState : EuchreDealtState, gameState : EuchreGameState) : (Suit, PlayerBid)
-  def discard(biddedState : EuchreBiddedState, gameState: EuchreGameState) : (Card)
+  def pickItUp(dealtState : DealtState, gameState : GameState) : Option[TeamOrAlone]
+  def nameIt(dealtState : DealtState, gameState : GameState) : Option[(Suit, TeamOrAlone)]
+  def nameItForced(dealtState : DealtState, gameState : GameState) : (Suit, TeamOrAlone)
+  def discard(biddedState : BiddedState, gameState: GameState) : (Card)
 }
 
-abstract case class EuchreAction()
-
-case class EuchreGameState(val rounds : List[EuchreRoundState])
-case class EuchreRoundState(val players : List[Player]) {
-  lazy val dealer = players.last
-}
-case class EuchreDealtState(val pre : EuchreRoundState, val dealt : (List[(Player, List[Card])],List[Card])) {
-  lazy val flippedCard = dealt._2.head
-  lazy val hiddenCard = dealt._2.tail.head
-}
-case class EuchreBiddedState(val pre : EuchreDealtState, val maker : Player, val suit : Suit, val bid : PlayerBid, val dealerCard : Card) {
-  lazy val wasOrderedUp = pre.flippedCard == dealerCard
-}
-
-case class PlayerBid()
-case object Team extends PlayerBid
-case object Alone extends PlayerBid
+case class TeamOrAlone()
+case object Team extends TeamOrAlone
+case object Alone extends TeamOrAlone
 
 
 class Player(val team : Team, val decider : EuchreDecider)
@@ -47,11 +52,11 @@ case class Team(deciders : List[EuchreDecider]) {
 class EuchreGame(val rules : EuchreRules, teams_ : List[List[EuchreDecider]]) {
   val teams : List[Team] = for (t <- teams_) yield Team(t)
   def playGame(rules : EuchreRules) {
-    def playRound(startState : EuchreRoundState, gameState : EuchreGameState) {
+    def playRound(startState : RoundState, gameState : GameState) {
       val dealt = dealCards(startState.players, 5, shuffle(EuchreDeck, randy))
-      val dealtState = EuchreDealtState(startState, dealt)
+      val dealtState = DealtState(startState, dealt)
       def doBids(hands : List[(Player, List[Card])]) = {
-        def doBids1(hands : List[(Player, List[Card])]) : Option[(Player, PlayerBid)] = {
+        def doBids1(hands : List[(Player, List[Card])]) : Option[(Player, TeamOrAlone)] = {
           hands match {
             case Nil => None
             case (player,hand)::hs => 
@@ -64,7 +69,7 @@ class EuchreGame(val rules : EuchreRules, teams_ : List[List[EuchreDecider]]) {
           }
         }
         
-        def doBids2(hands : List[(Player, List[Card])]) : (Player, Suit, PlayerBid) = {
+        def doBids2(hands : List[(Player, List[Card])]) : (Player, Suit, TeamOrAlone) = {
           hands match {
             case (p,h)::Nil => 
               val (s,b) = p.decider.nameItForced(dealtState, gameState)
@@ -85,16 +90,16 @@ class EuchreGame(val rules : EuchreRules, teams_ : List[List[EuchreDecider]]) {
             val (p,s,b) = doBids2(hands)
             (p,s,b,dealtState.hiddenCard)
         }
-        EuchreBiddedState(dealtState, maker, suit, bid, dealerCard)
+        BiddedState(dealtState, maker, suit, bid, dealerCard)
       }
       val biddedState = doBids(dealt._1)
       //Get the dealer discard
       val discard = startState.dealer.decider.discard(biddedState, gameState)
       //Create the dealers new hand
       val dh = dealtState.dealt._1.flatMap(p=>if (p._1 == startState.dealer) p._2 else Nil).map(c=> if (c == discard) biddedState.dealerCard else c)
-      val newHands = dealtState.dealt._1.map(p=>if (p._1 == startState.dealer) (p,dh)else p)
+      val newHands = dealtState.dealt._1.map(p=>if (p._1 == startState.dealer) (p._1,dh) else p)
       //Todo Ensure that the dealer's hand has that card in it
-      
+      val discardedState = DiscardedState(biddedState, newHands)
       
       5
     }
@@ -105,6 +110,6 @@ class EuchreGame(val rules : EuchreRules, teams_ : List[List[EuchreDecider]]) {
       List(ps(0),ps(2),ps(1),ps(3))
     }
     
-    playRound(EuchreRoundState(rotate(ps,randy.nextInt(4))), EuchreGameState(Nil))
+    playRound(RoundState(rotate(ps,randy.nextInt(4))), GameState(Nil))
   }
 }
