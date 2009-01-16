@@ -1,0 +1,54 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+        <head><title>All classes and objects in org.scalatest.prop</title>
+        <meta http-equiv="content-type" content="text/html; charset=UTF8"></meta><meta content="scaladoc (version 2.7.2.final)" name="generator"></meta><link href="../../style.css" type="text/css" rel="stylesheet"></link><script type="text/javascript" src="../../script.js"></script>
+        </head>
+        <body onload="init()"><div class="page-title"><div>ScalaTest 0.9.4</div></div><p><div>This document is the API specification for ScalaTest 0.9.4</div></p><table summary="" cellpadding="3" class="member">
+        <tr><td class="title" colspan="2">Class Summary</td></tr>
+        <tr>
+      <td class="modifiers" valign="top"> 
+        <code> trait</code>
+      </td>
+      <td class="signature">
+        <em><a href="../../org/scalatest/prop/Checkers.html" target="_self">Checkers</a></em>
+        <code> extends </code><a href="http://www.scala-lang.org/docu/files/api/scala/AnyRef.html" target="_self">AnyRef</a>
+        
+        <div>Trait that contains several &#8220;check&#8221; methods that perform ScalaCheck property checks.
+ If ScalaCheck finds a test case for which a property doesn't hold, the problem will be reported as a ScalaTest test failure.</div>
+      </td>
+    </tr>
+<tr>
+      <td class="modifiers" valign="top"> 
+        <code> trait</code>
+      </td>
+      <td class="signature">
+        <em><a href="../../org/scalatest/prop/FunSuite.html" target="_self">FunSuite</a></em>
+        <code> extends </code><a href="../../org/scalatest/FunSuite.html" target="_self">FunSuite</a><code> with </code><a href="../../org/scalatest/prop/Checkers.html" target="_self">Checkers</a>
+        
+        <div><strong>Deprecated: mix in Checkers and make explicit calls to check instead</strong> A <code>FunSuite</code> subtrait that provides methods that perform
+ ScalaCheck property checks.
+ If ScalaCheck, when invoked via one of the methods provided by <cod>FunSuite</code>, finds a test case for which a property doesn't hold, the problem will be reported as a ScalaTest test failure.</div>
+      </td>
+    </tr>
+<tr>
+      <td class="modifiers" valign="top"> 
+        <code> trait</code>
+      </td>
+      <td class="signature">
+        <em><a href="../../org/scalatest/prop/PropSuite.html" target="_self">PropSuite</a></em>
+        <code> extends </code><a href="../../org/scalatest/FunSuite.html" target="_self">FunSuite</a><code> with </code><a href="../../org/scalatest/prop/Checkers.html" target="_self">Checkers</a>
+        
+        <div><strong>Deprecated: Use org.scalatest.FunSuite with Checkers instead, and use explicit calls to check()</strong>
+ So instead of this:
+
+ <pre>
+   test(
+     "list concatenation using a test method",
+     (a: List[Int], b: List[Int]) => a.size + b.size == (a ::: b).size
+   )
+ </pre></div>
+      </td>
+    </tr>        
+        </table>
+</body>
+      </html>
