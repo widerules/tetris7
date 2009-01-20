@@ -1,0 +1,1 @@
+scala -classpath ../lib/scalatest-0.9.4/scalatest-0.9.4.jar org.scalatest.tools.Runner -p "../bin" -o

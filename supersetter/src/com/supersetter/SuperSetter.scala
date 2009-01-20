@@ -17,7 +17,7 @@ object SuperSetter {
   }
   
   case class SuperTree(val root : SuperTreeNode) {
-  
+    
   }
 
   case class SuperTreeAttribute(val name : String, val value : String) {
@@ -28,7 +28,6 @@ object SuperSetter {
   
   }
 }
-
 
 class SuperSetter {
   

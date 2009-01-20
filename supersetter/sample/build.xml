@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="run" name="Scalide">
+	<property environment="env" />
+	<property name="base.dir" value="${basedir}" />
+	<property name="src.dir" value="${base.dir}/src" />
+	<property name="build.dir" value="${base.dir}/build" />
+	<property name="jar.dir" value="${base.dir}/jar" />
+
+
+	<property name="scala.home" value="${env.SCALA_HOME}" />
+	<property name="scala-library.jar" value="${scala.home}/lib/scala-library.jar" />
+	<property name="scala-swing.jar" value="${scala.home}/lib/scala-swing.jar" />
+	<property name="scala-dbc.jar" value="${scala.home}/lib/scala-dbc.jar" />
+	<property name="scala-decoder.jar" value="${scala.home}/lib/scala-decoder.jar" />
+	<property name="scala-compiler.jar" value="${scala.home}/lib/scala-compiler.jar" />
+
+	<target name="init">
+		<tstamp>
+			<format property="STANDARD" pattern="yyyy-MM-dd_HH-mm-ss" />
+		</tstamp>
+		<path id="build.classpath">
+			<pathelement location="${scala-library.jar}" />
+			<pathelement location="${scala-compiler.jar}" />
+			<pathelement location="${build.dir}" />
+		</path>
+		<taskdef resource="scala/tools/ant/antlib.xml">
+			<classpath>
+				<pathelement location="${scala.home}/lib/scala-compiler.jar" />
+				<pathelement location="${scala-library.jar}" />
+			</classpath>
+		</taskdef>
+	</target>
+
+	<target name="clean" depends="init">
+		<delete dir="${build.dir}" />
+	</target>
+
+	<target name="build" depends="init">
+		<mkdir dir="${build.dir}" />
+		<scalac srcdir="${src.dir}" destdir="${build.dir}" classpathref="build.classpath" force="changed" addparams="-g" deprecation="on" encoding="us-ascii" target="jvm-1.5">
+			<include name="**/*.scala" />
+			<include name="**/*.java" />
+		</scalac>
+		<javac srcdir="${src.dir}" destdir="${build.dir}" classpathref="build.classpath">
+			<include name="**/*.java" />
+		</javac>
+	</target>
+
+	<macrodef name="mkJar">
+		<attribute name="jarname" />
+		<sequential>
+			<mkdir dir="${jar.dir}" />
+			<echo>Making Jar = @{jarname}</echo>
+			<jar destfile="${jar.dir}/@{jarname}" filesetmanifest="mergewithoutmain">
+				<manifest>
+					<attribute name="Built-By" value="${user.name}" />
+					<attribute name="Main-Class" value="org.scalide.Main" />
+					<attribute name="Class-Path" value="." />
+				</manifest>
+				<fileset dir="${build.dir}/" />
+				<zipfileset excludes="META-INF/*.SF" src="${scala-library.jar}" />
+				<zipfileset excludes="META-INF/*.SF" src="${scala-compiler.jar}" />
+			</jar>
+		</sequential>
+	</macrodef>
+
+	<target name="jar" depends="build">
+		<mkJar jarname="scalide.jar" />
+	</target>
+
+	<target name="run" depends="build">
+		<java dir="." classname="org.scalide.Main" fork="true" maxmemory="1024m" failonerror="true">
+	        <!-- <arg value="-h"/> -->
+	         <classpath>
+	           <pathelement location="${scala-library.jar}"/>
+	           <pathelement location="${scala-compiler.jar}"/>
+	           <pathelement path="${build.dir}"/>
+	         </classpath>
+		</java>
+	</target>
+
+	<target name="nightly" depends="clean, build">
+		<mkJar jarname="scalide-${STANDARD}.jar" />
+	</target>
+
+</project>
