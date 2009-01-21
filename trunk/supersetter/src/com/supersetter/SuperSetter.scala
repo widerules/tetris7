@@ -13,7 +13,8 @@ object SuperSetter {
   //have an addProperties() call associated with them
   def fromScala(file : String) : SuperTree = {
     //Get a scala interpreter and run it
-    SuperTree(SuperTreeNode(Nil, Nil))
+    tools.nsc.Interpreter
+    SuperTree(EmptyNode)
   }
   
   case class SuperTree(val root : SuperTreeNode) {
@@ -24,8 +25,28 @@ object SuperSetter {
   
   }
 
-  case class SuperTreeNode(val children : List[SuperTreeNode], val attributes : List[SuperTreeAttribute]) {
+  sealed abstract class SuperTreeNode {
+    val id : Option[String]
+  }
   
+  //Simple place holder for nodes that are empty
+  case object EmptyNode extends SuperTreeNode{
+    val id = None
+  }
+  
+  //XML Tree Nodes are nodes that use xml to map over the components
+  //fields and sub components
+  case class XMLNode(id : Option[String], children : List[SuperTreeNode], val attributes : List[SuperTreeAttribute]) 
+  extends SuperTreeNode {
+    
+  }
+  
+  //Object tree node allow for dynamically created components,
+  //that is components that are created at program runtime
+  //rather than at project compile time
+  //They allow allow for instantiating components directly
+  case class AnyRefNode(id : Option[String], ref : AnyRef) {
+    
   }
 }
 
