@@ -6,7 +6,7 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/guice-1.0/guice-1.0.jar"/>
 	<classpathentry kind="lib" path="lib/scalatest-0.9.4/scalatest-0.9.4.jar"/>
-	<classpathentry kind="lib" path="lib/scala-2.7.3.final/scala-compiler.jar"/>
+	<classpathentry kind="lib" path="lib/scala-2.7.3.final/scala-compiler.jar" sourcepath="lib/scala-2.7.3.final/src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
