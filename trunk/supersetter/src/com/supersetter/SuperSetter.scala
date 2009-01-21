@@ -7,14 +7,48 @@ package com.supersetter
  * Copyright Ben Jackman 2009
  */
 object SuperSetter {
+  val Log = biz.jackman.logging.Logger("SuperSetter")
   //Parses a scala file into a tree, the scala file must call the 
   //set node function at some point in time
   //Additional any properties files used by the file should
   //have an addProperties() call associated with them
-  def fromScala(file : String) : SuperTree = {
+  def fromScript(file : String) : SuperTree = {
     //Get a scala interpreter and run it
-    tools.nsc.Interpreter
+    val interpreter = mkInterpreter 
+    
     SuperTree(EmptyNode)
+  }
+  
+  //Used for xml based trees
+  class LibraryFunctions {
+    var root : Option[AnyRef] = None
+    var nextId = 0L
+    var injected : Map[Long, AnyRef] = Map()
+    
+    //This function must be called by a script to
+    //tell the super setter what element is going to end
+    //up being the root element
+    def setRoot(ref : AnyRef) { this.root = Some(ref) }
+    
+    //This function allows for adding objects directly
+    //into the tree
+    def add(ref : AnyRef) : xml.Elem = {
+      val id = nextId
+      nextId += 1
+      injected += id -> ref
+      (<ObjectRef id={id.toString}/>)
+    } 
+  }
+  
+  def mkInterpreter {
+    val interpreter = supersetter.interpreter.SSInterpreter.createInterpreter(Log.error(_))
+    
+    //Add the core components to the interpeter
+    {
+      interpreter.bind("SS", classOf[LibraryFunctions].getName, new LibraryFunctions)
+    }
+    
+    interpreter
   }
   
   case class SuperTree(val root : SuperTreeNode) {
