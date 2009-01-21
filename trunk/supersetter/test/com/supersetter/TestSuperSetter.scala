@@ -17,10 +17,21 @@ private[supersetter] object Sample {
   class Valued(id : String, wage : Int) extends Customer(id, wage)
   class Common(id : String, wage : Int) extends Customer(id, wage)
   
+  val Managers : List[Class[_]] = List(classOf[EmployeeManager], classOf[CustomerManager])
+  
   /** This class contains a sample scala source
    */
-  class SampleConfiguration {
-    
+  class C1 extends SuperSetter.BaseSettings {
+    val body = {
+      <EmployeeManager>
+        <Executive id="Bob" wage="5"/>
+        {ss.add(new Employee("AnonymousEmployee",4){})}
+        <Engineer id="Bill" wage="3"/>
+      </EmployeeManager>
+      <CustomerManager>
+      </CustomerManager>
+    }
+    ss.setRoot(<SuperSettings>{body}</SuperSettings>)
   }
 }
 

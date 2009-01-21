@@ -19,6 +19,13 @@ object SuperSetter {
     SuperTree(EmptyNode)
   }
   
+  class SSMap[K, V, C <: V](base : Class[V], derived : Class[C]*)
+  
+  //Inherit from this class in order to use the library functions
+  class BaseSettings {
+    val ss = new LibraryFunctions 
+  }
+  
   //Used for xml based trees
   class LibraryFunctions {
     var root : Option[AnyRef] = None
@@ -37,7 +44,7 @@ object SuperSetter {
       nextId += 1
       injected += id -> ref
       (<ObjectRef id={id.toString}/>)
-    } 
+    }
   }
   
   def mkInterpreter {
@@ -45,7 +52,7 @@ object SuperSetter {
     
     //Add the core components to the interpeter
     {
-      interpreter.bind("SS", classOf[LibraryFunctions].getName, new LibraryFunctions)
+      interpreter.bind("ss", classOf[LibraryFunctions].getName, new LibraryFunctions)
     }
     
     interpreter
